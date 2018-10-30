@@ -1,0 +1,6 @@
+cashflow<-read.csv(file="Sirkenhillot.csv",header=TRUE,sep=";")
+columns_in<-c("Pvm","Määrä")
+money_out<-select(cashflow,columns_in)
+money_out<-rename(money_out,amount=Määrä)
+money_out<-rename(money_out,date=Pvm)
+write.csv(money_out,"Sirkesjam.csv")
