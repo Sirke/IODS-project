@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/434896/e1df4a2efe4842edbf4d3a9943aacab7
+bundleId: https://api.rpubs.com/api/v1/document/434896/e1df4a2efe4842edbf4d3a9943aacab7
+url: http://rpubs.com/Sirke/434896
+when: 1540896385.44217
