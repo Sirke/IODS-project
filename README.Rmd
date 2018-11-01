@@ -1,5 +1,0 @@
----
-something about the course.
-Check out my [GitHub](https://github.com/Sirke/IODS-project)!!
-
----
