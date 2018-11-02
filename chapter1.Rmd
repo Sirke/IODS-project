@@ -29,6 +29,8 @@ Check out my [GitHub](https://github.com/Sirke/IODS-project)!!
 
 ### Then to business
 
+The following has nothing to do with the actual course work. I'm just testing out stuff. 
+
 I first made the mistake of placing the datafile that I next wanted to read in, to a separate folder inside the IODS-project-folder. Therefore, when I tried to read in the file, my code wasn't able to find it. After some googling I found out that this was because R console and Rmarkdown have separate independent working directories. You can read about this issue [here](https://stackoverflow.com/questions/25834007/read-table-and-read-csv-both-error-in-rmd).
 
 So I start off with checking that I'm in the right working directory  
