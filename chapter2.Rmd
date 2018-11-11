@@ -1,7 +1,148 @@
-# Insert chapter 2 title here
+# Linear regression analysis
 
-*Describe the work you have done this week and summarize your learning.*
+##What I learned this week
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+This week I've learned about data wrangling and linear regression analysis. The basis of all data science is efficient data wrangling. One has to be able to modify, filter, convert etc. the raw data to an appropriate format to be able to perform any statistical analysis with it. 
+
+I started my "statistical journey" from linear regression. This analysis finds out whether there are any statistically significant relationships between dependent and explanatory variables. Depending on the number of explaining factors the process is called either simple linear regression or multiple linear regression. I fitted a multiple linear regression model, interpereted the results and checked for the validity of my model.
+
+Here's how I did it..
+
+##Data exploration
+Let's start by reading in the data and exploring the structure and dimensions of the data:
+```{r}
+#data can be read in with read.csv-command and it has headers, T means TRUE.
+learning2014<-read.csv("F:/kurssit/GitHub/IODS-project/data/learning2014.csv",header = T)
+#str-command lists all the variables in the data, their class and first few observations
+str(learning2014)
+#dim-command lists the number of rows and columns in the data
+dim(learning2014)
+```
+The data comes from a questionnaire survey that measured students learning when studying statistics. The data consists of 166 observations (individuals) and 7 variables have been measured. Here's a list explaining the variables: 
+
+Age = Age (in years) derived from the date of birth
+
+Attitude = Global attitude toward statistics
+
+Points  = Exam points
+
+gender = Gender: M (Male), F (Female)
+
+Deep  =  Deep approach to learning (on a scale from 1 to 5)           
+
+Surf  = Surface approach to learning (on a scale from 1 to 5)
+
+Stra  = Strategic approach to learning (on a scale from 1 to 5)
+
+You can read more about the study variables [here](http://www.helsinki.fi/~kvehkala/JYTmooc/JYTOPKYS2-meta.txt).
+
+Let's explore the variation in the variables:
+```{r}
+#let's take a summary of all the variables
+summary(learning2014)
+```
+We can see that most of the students that participated in the study are female and around 25 years old. The three learning approach variables (deep, stra and surf) and the points that students have scored, all have a fairly even distribution.
+
+Then let's visualize how different variables affect the points that students are scoring:
+
+```{r}
+# access the GGally and ggplot2 libraries
+library(GGally)
+library(ggplot2)
+
+# create a plot matrix with ggpairs()
+p <- ggpairs(learning2014, mapping = aes(col=gender,alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
+
+# draw the plot
+p
+```
+
+-Looks like students with higher (better) attitude are scoring higher points. There's maybe a slight gender division but the main deduction is the same for both genders.
+
+-Deep learning approach doesn't seem to influence points scored.
+
+-Strategic learning approach seems to have a slight positive effect on points scored.
+
+-Surface learning approach seems to have a slight negative effect on points scored.
+
+-Older student seem to be scoring less points.
+
+In summary, it looks like attitude, strategic and surface learning approaches might affect points most strongly. But to be sure, we want to test it statistically.
+
+##Fitting a statistical model
+Let's fit a linear model where points are explained by attitude, stra and surf:
+```{r}
+# create a regression model with multiple explanatory variables
+my_model2 <- lm(points ~ attitude + stra+surf, data = learning2014)
+
+# print out a summary of the model
+summary(my_model2)
+```
+From the summary of the statistical test we can find out that the variables stra and surf do not have a statistically significant influence on points because their p-value (Pr(>|t|)) is greater than 0.05. This means that the points that the students get from a test are not dependent on their strategic or surface learning approach. 
+
+Attitude, however, seems to have a strong statistically significant influence on points because its p-value is way below 0.05. It seems that attitude has a great influence on points.
+
+##Model selection
+
+Let's explore which variables we can drop as unnecessary. Probably surf but can we also drop stra?
+
+In the following I use AIC values for model selection. You can read more about them [here](https://en.wikipedia.org/wiki/Akaike_information_criterion).
+```{r}
+# step-command drops each variable one at a time and counts an AIC value which is the lowest possible for the best model.
+step(my_model2)
+
+#drop1-command does pretty much the same thing but drops the variables one at a time in the order they were in the model so you have to be careful in which order you present the variables in the model
+drop1(my_model2)
+```
+These analysis suggest that we should drop 'surf' from the model as a non-influencial variable. Let's keep 'stra' still in the game because it's AIC value difference to the next best model is so small that it probably is also influencial althoug attitude clearly seems to be the most important variable.
+
+Let's fit a new model with only attitude and stra:
+```{r}
+#new model with only attitude and stra as explaining variables
+my_model3 <- lm(points ~ attitude + stra, data = learning2014)
+
+#summary of the new model
+summary(my_model3)
+
+```
+From the summary of the final model we first find a distribution of residuals which describes the difference between the observed values and the estimated values of the sample mean. 
+
+Next there is a coefficient table. Regression coefficients represent the mean change in the response variable (attitude) for one unit of change in the predictor variable (attitude and stra) while holding other predictors in the model constant.
+
+The p-value for each term tests the null hypothesis that the coefficient is equal to zero (no effect). Strategic learning approach is not anymore statistically significant but I want to keep it in the model because AIC values showed that it is very close to being significant.
+
+From these results we can deduce that attitude has a strong positive effect and strategic learning approach a slightly weaker positive effect on points.
+
+R-squared is a statistical measure of how close the data are to the fitted regression line. It is the percentage of the response variable variation that is explained by a linear model.
+
+In our case the R-squared value is around 20 % which seems low but in some fields, it is entirely expected that R-squared values will be low. For example, any field that attempts to predict human behavior, such as psychology, typically has R-squared values lower than 50%. Humans are simply harder to predict than physical processes.
+
+The F statistic on the last line is telling you whether the regression as a whole is performing 'better than random' - any set of random predictors will have some relationship with the response, so it's seeing whether my model fits better than I'd expect if all my predictors had no relationship with the response (beyond what would be explained by that randomness). This p-value is below 0.05 so my model makes sense.
+
+##Model validation
+Then it's time for model validation. I made certain assumptions about the data when I decided to use a linear regression model in my analysis. Now I have to test that these assumptions hold and are not violated. 
+
+Let's draw some diagnostic plots. These things are easier to interpret visually.
+```{r}
+par(mfrow = c(2,2))
+plot(my_model2,which=c(1,2,5))
+```
+
+
+
+The first plot is a scatter plot of residuals on the y axis and fitted values (estimated responses) on the x axis. The plot is used to detect non-linearity, unequal error variances, and outliers. If the residuals appear to behave randomly, it suggests that the model fits the data well. On the other hand, if non-random structure is evident in the residuals, it is a clear sign that the model fits the data poorly.
+
+In this case everything seems to be ok. There are few values (numbered) that have lower values but they are not clear outliers on my opinion. 
+
+The second plot is basically a Q-Q plot which is a scatterplot created by plotting two sets of quantiles against one another. If both sets of quantiles came from the same distribution, we should see the points forming a line that's roughly straight.
+
+In this case I use a NORMAL Q-Q plot which checks the assumption that the dependent variable is normally distributed. This assumption seems to hold.
+
+The last plot helps me to find influential cases if there are any. Not all outliers are influential in linear regression analysis. When cases are outside of the Cook's distance (dashed red line not even visible in this plot), the cases are influential to the regression results. The regression results will be altered if one excludes those cases. 
+
+In this case there are no influencial cases. The red dashed line outside of which the influencial cases would be found, is not even visible in this plot.
+
+##Conclusions
+My model seems to be a valid one. It explains around 20 % of the variation in the points that students scored in an exam. The most important factors affecting positively the points were attitude and strategic learning approach. 
+
+So check your attitude!!
