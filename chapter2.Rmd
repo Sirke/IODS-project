@@ -94,12 +94,12 @@ step(my_model2)
 #drop1-command does pretty much the same thing but drops the variables one at a time in the order they were in the model so you have to be careful in which order you present the variables in the model
 drop1(my_model2)
 ```
-These analysis suggest that we should drop 'surf' from the model as a non-influencial variable. Let's keep 'stra' still in the game because it's AIC value difference to the next best model is so small that it probably is also influencial althoug attitude clearly seems to be the most important variable.
+These analysis suggest that we should drop 'surf' from the model as a non-influencial variable but keep 'stra' still in the game. However, because the AIC difference to the next best model is less than 2, it is usually recommended to choose the simpler model.
 
-Let's fit a new model with only attitude and stra:
+Therefore, let's fit a new model with only attitude:
 ```{r}
 #new model with only attitude and stra as explaining variables
-my_model3 <- lm(points ~ attitude + stra, data = learning2014)
+my_model3 <- lm(points ~ attitude, data = learning2014)
 
 #summary of the new model
 summary(my_model3)
@@ -107,11 +107,11 @@ summary(my_model3)
 ```
 From the summary of the final model we first find a distribution of residuals which describes the difference between the observed values and the estimated values of the sample mean. 
 
-Next there is a coefficient table. Regression coefficients represent the mean change in the response variable (attitude) for one unit of change in the predictor variable (attitude and stra) while holding other predictors in the model constant.
+Next there is a coefficient table. Regression coefficients represent the mean change in the response variable (attitude) for one unit of change in the predictor variable (attitude) while holding other predictors in the model constant.
 
-The p-value for each term tests the null hypothesis that the coefficient is equal to zero (no effect). Strategic learning approach is not anymore statistically significant but I want to keep it in the model because AIC values showed that it is very close to being significant.
+The p-value for each variable tests the null hypothesis that the coefficient is equal to zero (no effect).
 
-From these results we can deduce that attitude has a strong positive effect and strategic learning approach a slightly weaker positive effect on points.
+From these results I deduce that attitude has a strong positive effect.
 
 R-squared is a statistical measure of how close the data are to the fitted regression line. It is the percentage of the response variable variation that is explained by a linear model.
 
@@ -132,7 +132,7 @@ plot(my_model2,which=c(1,2,5))
 
 The first plot is a scatter plot of residuals on the y axis and fitted values (estimated responses) on the x axis. The plot is used to detect non-linearity, unequal error variances, and outliers. If the residuals appear to behave randomly, it suggests that the model fits the data well. On the other hand, if non-random structure is evident in the residuals, it is a clear sign that the model fits the data poorly.
 
-In this case everything seems to be ok. There are few values (numbered) that have lower values but they are not clear outliers on my opinion. 
+In this case everything seems to be ok. There are few values (indicated with an id number) that have lower values but they are not clear outliers on my opinion. 
 
 The second plot is basically a Q-Q plot which is a scatterplot created by plotting two sets of quantiles against one another. If both sets of quantiles came from the same distribution, we should see the points forming a line that's roughly straight.
 
@@ -143,6 +143,6 @@ The last plot helps me to find influential cases if there are any. Not all outli
 In this case there are no influencial cases. The red dashed line outside of which the influencial cases would be found, is not even visible in this plot.
 
 ##Conclusions
-My model seems to be a valid one. It explains around 20 % of the variation in the points that students scored in an exam. The most important factors affecting positively the points were attitude and strategic learning approach. 
+My model seems to be a valid one. It explains around 20 % of the variation in the points that students scored in an exam. The most important factor affecting positively the points was attitude. 
 
 So check your attitude!!
