@@ -1,0 +1,203 @@
+#Logistic regression
+
+
+##What I learned this week
+
+This week I learned about logistic regression..
+
+##Data exploration and selection
+Let's start by reading in the data and exploring the structure and dimensions of the data:
+
+```{r}
+#read in the csv
+alc<-read.csv("C:/Users/Sirke Piirainen/Documents/GitHub/IODS-project/data/alc.csv",header = T)
+
+#print the names of the columns
+names(alc)
+```
+
+This data approach student achievement in secondary education of two Portuguese schools. The data attributes include student grades (G1, G2 and G3), demographic, social and school related features and it was collected by using school reports and questionnaires. Two datasets were provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por). These datasets have been combined so that numerical variables are averaged and categorical values are taken directly from the Mathematics dataset. Alcohol consumption of students during week days and weekends has been combined as an average and categorized yes or no for high use. Check the variable details [here](https://archive.ics.uci.edu/ml/datasets/Student+Performance).
+
+The data consists of 35 variables and 382 observations. 
+
+
+Next I want to study the relationships between high/low alcohol consumption and some of the other variables in the data. To do this, I choose 4 interesting variables in the data and for each of them, I present a hypothesis about their relationships with alcohol consumption.
+
+1. famrel - quality of family relationships (numeric: from 1 - very bad to 5 - excellent) 
+I assume students with very bad realationships have high alcohol consumption.
+
+2. absences - number of school absences (numeric: from 0 to 93)
+I assume student with lots of absences have high alcohol consumption.
+
+3. studytime - weekly study time (numeric: 1 - <2 hours, 2 - 2 to 5 hours, 3 - 5 to 10 hours, or 4 - >10 hours) 
+I assume that students with low weekly study time have high alcohol consumption.
+
+4. higher - wants to take higher education (binary: yes or no)
+I assume students who don't want to take higher education have high alcohol consumption.
+
+```{r}
+#get some packages
+library(tidyr); library(dplyr); library(ggplot2)
+
+#select only the data that I am interested in
+choose<-c("high_use","famrel","absences","studytime","higher")
+alc2<-select(alc,one_of(choose))
+
+#summary table of the data
+summary(alc2)
+
+#draw barplots of variables to study their distribution
+gather(alc2) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free")+geom_bar()
+
+library(GGally)
+library(ggplot2)
+
+# create a plot matrix with ggpairs()
+p <- ggpairs(alc2, mapping = aes(col=high_use,alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
+
+# draw the plot
+p
+
+```
+None of the variables seem to be evenly distributed. 
+
+-There are more students that don't have a high use of alcohol than those that do.
+-There are more students that want to take higher education than those who don't want to. 
+-There are many students with very little absences, some with a few absences and then again many student with more absences.
+-Family relations seem to be fairly good for most of the students.
+-Most of the students study 2-5 hours weekly. Only few students study a lot.
+```{r}
+library(GGally)
+library(ggplot2)
+
+# create a plot matrix with ggpairs()
+p <- ggpairs(alc2, mapping = aes(col=high_use,alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
+
+# draw the plot
+p
+
+```
+Looks like all the hypothesis that I made hold some truth although I guess I might not have enough data from all observed categories to verify my assumptions. 
+
+##Fitting a logistic regression model
+```{r}
+#fit a logistic regression model
+m <- glm(high_use ~ famrel + absences+studytime+higher-1, data = alc2, family = "binomial")
+
+#plot a summary table
+summary(m)
+```
+From the summary table I can see that the relationship:
+
+-between high use and famrel is not significant but students with better (higher) relations are less likely in the high use category.
+
+-between absences and high use is highly significant so that students with many absences are more likely in the high use category.
+
+-between study time and high use is also highly significant so that student who spend more time studying are less likely in the high use category.
+
+-between higher education and high use is not significant but is such that students with no willingness to take higher education are more likely in the high use category.
+
+
+##Model selection
+I study the factorial variable 'higher' a bit more. I check whether the whole variable 'higher' improves the model fit, I fit one model with (my.mod1) and one without the variable 'higher' (my.mod2) and conduct a likelihood ratio test. This tests the hypothesis that all coefficients of higher are zero:
+
+```{r}
+my.mod1 <- glm(high_use ~ famrel + absences+studytime+higher-1, data = alc2, family = "binomial") # with rank
+my.mod2 <- glm(high_use ~ famrel + absences+studytime-1, data = alc2, family = "binomial") # without rank
+
+anova(my.mod1, my.mod2, test="LRT")
+```
+
+This test tells me that having the variable 'higher' in the model doesn't improve it so I can drop it. I fit a new model without it:
+
+
+```{r}
+#the new model again
+m2 <- glm(high_use ~ famrel + absences+studytime, data = alc2, family = "binomial")
+#summary table of the new model
+summary(m2)
+```
+Then I could also try to drop the variable 'famrel' because it doesn't seem to be significant (p-value less than 0.05). I fit a model without 'famrel'.
+
+```{r}
+m3<-glm(formula = high_use ~ absences + studytime, family = "binomial", 
+    data = alc2)
+
+summary(m3)
+```
+The model without 'famrel' has a higher AIC value which is not preferable but the difference to the model including it is less than 2 so therefore I can choose the simpler model. So my final model has only absences and studytime as explaining variables.
+
+Then I count the coefficients of the final model as odds ratios and provide confidence intervals for them:
+
+###counting the odds
+
+```{r}
+#count odd ratios 
+OR <- coef(m3) %>% exp
+
+# compute confidence intervals (CI)
+CI<-confint(m3)%>%exp
+
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+
+```
+
+Odd ratios higher than 1 means that this variable is positively associated with "success", in this case being in the high use category. In my case absences are positively associated with high use and studytime negatively. 
+
+From the confidence intervals I can check that 1 doesn't occur inside them because it would mean that the variable has no effect on the success and whether the variable has a lot of variation in the intervals. A large variation in the intervals indicates a low level of precision of the odds ratio, whereas a small variation in intervals indicates a higher precision of the odds ratio.
+
+In my case studytime has rather wide confidence intervals and therefore it might have a lower precision of the odds ratio.
+
+##Predictions
+
+Provide a 2x2 cross tabulation of predictions versus the actual values and optionally display a graphic visualizing both the actual values and the predictions. Compute the total proportion of inaccurately classified individuals (= the training error) and comment on all the results. Compare the performance of the model with performance achieved by some simple guessing strategy.
+
+
+```{r}
+# predict() the probability of high_use
+probabilities <- predict(m3, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc2 <- mutate(alc2, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc2 <- mutate(alc2, prediction = probability>0.5)
+
+# see the last ten original classes, predicted probabilities, and class predictions
+select(alc2, studytime, absences, high_use, probability, prediction) %>% tail(10)
+
+# tabulate the target variable versus the predictions
+table(high_use = alc2$high_use, prediction = alc2$prediction)
+
+# tabulate the target variable versus the predictions
+table(high_use = alc2$high_use, prediction = alc2$prediction)%>%prop.table()%>%addmargins()
+```
+Above I produced two confusion tables (in absolute numbers and in percentage) from which I can see how many predictions I got correct. 
+
+```{r}
+g <- ggplot(alc2, aes(x = probability, y = high_use,col=prediction))
+
+# define the geom as points and draw the plot
+g+geom_point()
+
+
+```
+Here I can see both the actual values and the predictions.
+
+To define the goodness of my model I count the absolute number of the incorrect predictions. 
+
+```{r}
+# define a loss function (mean prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss_func(class = alc2$high_use, prob = alc2$probability)
+
+
+```
+
+The result is 28 %. I could've counted that also from the cross table (25 + 3 = 28 %). I'm not exactly sure whether this makes my model good or bad.

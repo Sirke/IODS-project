@@ -12,7 +12,7 @@ Here's how I did it..
 Let's start by reading in the data and exploring the structure and dimensions of the data:
 ```{r}
 #data can be read in with read.csv-command and it has headers, T means TRUE.
-learning2014<-read.csv("F:/kurssit/GitHub/IODS-project/data/learning2014.csv",header = T)
+learning2014<-read.csv("C:/Users/Sirke Piirainen/Documents/GitHub/IODS-project/data/learning2014.csv",header = T)
 #str-command lists all the variables in the data, their class and first few observations
 str(learning2014)
 #dim-command lists the number of rows and columns in the data

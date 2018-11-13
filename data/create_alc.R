@@ -3,7 +3,7 @@
 #exercise 3, creating alc
 #data from: https://archive.ics.uci.edu/ml/datasets/Student+Performance
 
-#read in data
+#read in the data
 mat<-read.csv("student-mat.csv",header = T, sep = ";")
 por<-read.csv("student-por.csv",header = T, sep = ";")
 
@@ -28,7 +28,7 @@ math_por <- inner_join(mat, por, by = join_by,suffix=c(".math",".por"))
 
 #check structure
 str(math_por)
-#dimensions
+#and dimensions
 dim(math_por)
 
 #####################################################################################
@@ -66,3 +66,18 @@ for(column_name in notjoined_columns) {
 
 # glimpse at the new combined data
 glimpse(alc)
+
+###################################################################################
+#creating new variables
+
+# define a new column alc_use by combining weekday and weekend alcohol use
+alc <- mutate(alc, alc_use = (Dalc + Walc) / 2)
+
+# define a new logical column 'high_use' which is TRUE if alc_use is greater than 2.
+alc <- mutate(alc, high_use = alc_use > 2)
+
+#check that everything is correct
+glimpse(alc)
+
+#save the data in csv
+write.csv(alc,"alc.csv",row.names = F)
