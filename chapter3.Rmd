@@ -102,8 +102,8 @@ From the summary table I can see that the relationship:
 I study the factorial variable 'higher' a bit more. I check whether the whole variable 'higher' improves the model fit, I fit one model with (my.mod1) and one without the variable 'higher' (my.mod2) and conduct a likelihood ratio test. This tests the hypothesis that all coefficients of higher are zero:
 
 ```{r}
-my.mod1 <- glm(high_use ~ famrel + absences+studytime+higher-1, data = alc2, family = "binomial") # with rank
-my.mod2 <- glm(high_use ~ famrel + absences+studytime-1, data = alc2, family = "binomial") # without rank
+my.mod1 <- glm(high_use ~ famrel + absences+studytime+higher-1, data = alc2, family = "binomial") 
+my.mod2 <- glm(high_use ~ famrel + absences+studytime-1, data = alc2, family = "binomial")
 
 anova(my.mod1, my.mod2, test="LRT")
 ```
@@ -127,7 +127,7 @@ summary(m3)
 ```
 The model without 'famrel' has a higher AIC value which is not preferable but the difference to the model including it is less than 2 so therefore I can choose the simpler model. So my final model has only absences and studytime as explaining variables.
 
-Then I count the coefficients of the final model as odds ratios and provide confidence intervals for them:
+Next I count the coefficients of the final model as odds ratios and provide confidence intervals for them:
 
 ###counting the odds
 
@@ -143,9 +143,9 @@ cbind(OR, CI)
 
 ```
 
-Odd ratios higher than 1 means that this variable is positively associated with "success", in this case being in the high use category. In my case absences are positively associated with high use and studytime negatively. 
+Odd ratios higher than 1 means that this variable is positively associated with "success", in this case being in the high use category. In this case, the variable 'absences' is positively associated with high use and 'studytime' is negatively associated. 
 
-From the confidence intervals I can check that 1 doesn't occur inside them because it would mean that the variable has no effect on the success and whether the variable has a lot of variation in the intervals. A large variation in the intervals indicates a low level of precision of the odds ratio, whereas a small variation in intervals indicates a higher precision of the odds ratio.
+From the confidence intervals I can check that 1 doesn't occur within them because it would mean that the variable has no effect on the success. I can also observe whether the variable has a lot of variation in the intervals. A large variation in the intervals indicates a low level of precision of the odds ratio, whereas a small variation in intervals indicates a higher precision of the odds ratio.
 
 In my case studytime has rather wide confidence intervals and therefore it might have a lower precision of the odds ratio.
 
@@ -153,6 +153,7 @@ In my case studytime has rather wide confidence intervals and therefore it might
 
 Provide a 2x2 cross tabulation of predictions versus the actual values and optionally display a graphic visualizing both the actual values and the predictions. Compute the total proportion of inaccurately classified individuals (= the training error) and comment on all the results. Compare the performance of the model with performance achieved by some simple guessing strategy.
 
+To validate my model I use it to make predictions and compare them with the true observed values.
 
 ```{r}
 # predict() the probability of high_use
@@ -173,7 +174,9 @@ table(high_use = alc2$high_use, prediction = alc2$prediction)
 # tabulate the target variable versus the predictions
 table(high_use = alc2$high_use, prediction = alc2$prediction)%>%prop.table()%>%addmargins()
 ```
-Above I produced two confusion tables (in absolute numbers and in percentage) from which I can see how many predictions I got correct. 
+Above I produced two confusion tables (in absolute numbers and in percentage) from which I can see how many or what proportion of the predictions were correct. 
+
+Then the same thing as a plot:
 
 ```{r}
 g <- ggplot(alc2, aes(x = probability, y = high_use,col=prediction))
@@ -183,9 +186,9 @@ g+geom_point()
 
 
 ```
-Here I can see both the actual values and the predictions.
+In this plot I can see both the actual values and the predictions. I have quite a lot of predictions of falses even though they were actually true. But is not as bad as predicting true even though they were falses in reality. falc
 
-To define the goodness of my model I count the absolute number of the incorrect predictions. 
+To quantify the goodness of my model I can count the proportion of incorrect predictions. 
 
 ```{r}
 # define a loss function (mean prediction error)
@@ -194,10 +197,51 @@ loss_func <- function(class, prob) {
   mean(n_wrong)
 }
 
-# call loss_func to compute the average number of wrong predictions in the (training) data
+# call loss_func to compute the average number of wrong predictions
 loss_func(class = alc2$high_use, prob = alc2$probability)
 
 
 ```
 
-The result is 28 %. I could've counted that also from the cross table (25 + 3 = 28 %). I'm not exactly sure whether this makes my model good or bad.
+The result is 28 %. I could've counted that also from the cross table (25 + 3 = 28 %). On my opinion that sounds like a lot but I guess it is still better than a simple guessing strategy. 72 % for correct predictions sounds better :)
+
+The problem with this kind of model validation is that the model is asked to predict the same values that are used to create the model. This seems like a circular argument. 
+
+##Cross-validation
+Bonus: Perform 10-fold cross-validation on your model. Does your model have better test set performance (smaller prediction error using 10-fold cross-validation) compared to the model introduced in DataCamp (which had about 0.26 error). Could you find such a model? (0-2 points to compensate any loss of points from the above exercises)
+
+Another way of doing model validation is cross-validation. Here a proportion of the data is set aside as testing data and the model is fitted with training data only. The resulting model is then fed with testing data to make predictions. The goodness of the model is then quantified as the proportion of correct predictions. This procedure is repeated several times so that the whole dataset has been used as testing data. If the cross-validation is 5-fold it means that the data is split into 5 proportions of which 1/5 is used as testing data one at a time. Which data to select as testing data can be random or for example spatially defined.
+
+In R cross-validation can be done easily several times so the following r code I repeat a couple of times:
+
+```{r}
+# K-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc2, cost = loss_func, glmfit = m, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+All the results that I get are close to 29-30 %. This means that with cross-validation my model seems to be performing worse than with the loss function I performed earlier (and the model used in DataCamp). I assume this is because the cross-validation procedure is more profound and therefore gives a more realistic valuation of the prediction accuracy. Without a proper model validation the results might be too over-optimistic.
+
+##Comparing complicated and simple models with cross-validation metrics
+
+Super-Bonus: Perform cross-validation to compare the performance of different logistic regression models (= different sets of predictors). Start with a very high number of predictors and explore the changes in the training and testing errors as you move to models with less predictors. Draw a graph displaying the trends of both training and testing errors by the number of predictors in the model. (0-4 points to compensate any loss of points from the above exercises)
+
+m <- glm(high_use ~ famrel + absences+studytime+higher-1, data = alc2, family = "binomial")
+
+```{r}
+#the most complicated model
+M1<-glm(high_use ~ famrel + absences+studytime+higher, data = alc2, family = "binomial")
+M2<-glm(high_use ~        + absences+studytime+higher, data = alc2, family = "binomial")
+M3<-glm(high_use ~ famrel +         +studytime+higher, data = alc2, family = "binomial")
+M4<-glm(high_use ~ famrel + absences+         +higher, data = alc2, family = "binomial")
+M5<-glm(high_use ~ famrel + absences+studytime+      , data = alc2, family = "binomial")
+M6<-glm(high_use ~ studytime+higher, data = alc2, family = "binomial")
+M7<-glm(high_use ~ famrel + higher, data = alc2, family = "binomial")
+M8<-glm(high_use ~ famrel + absences, data = alc2, family = "binomial")
+```
+
+
+
+
