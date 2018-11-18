@@ -16,7 +16,7 @@ alc<-read.csv("C:/Users/Sirke Piirainen/Documents/GitHub/IODS-project/data/alc.c
 names(alc)
 ```
 
-This data approach student achievement in secondary education of two Portuguese schools. The data attributes include student grades (G1, G2 and G3), demographic, social and school related features and it was collected by using school reports and questionnaires. Two datasets were provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por). These datasets have been combined so that numerical variables are averaged and categorical values are taken directly from the Mathematics dataset. Alcohol consumption of students during week days and weekends has been combined as an average and categorized yes or no for high use. Check the variable details [here](https://archive.ics.uci.edu/ml/datasets/Student+Performance).
+This data consists of student achievements in secondary education of two Portuguese schools. The data attributes include student grades (G1, G2 and G3), demographic, social and school related features and it was collected by using school reports and questionnaires. Two datasets were provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por). These datasets have been combined so that numerical variables are averaged and categorical values are taken directly from the Mathematics dataset. Alcohol consumption of students during week days and weekends has been combined as an average and categorized yes or no for high use. Check the variable details [here](https://archive.ics.uci.edu/ml/datasets/Student+Performance).
 
 The data consists of 35 variables and 382 observations. 
 
@@ -48,35 +48,30 @@ summary(alc2)
 
 #draw barplots of variables to study their distribution
 gather(alc2) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free")+geom_bar()
-
-library(GGally)
-library(ggplot2)
-
-# create a plot matrix with ggpairs()
-p <- ggpairs(alc2, mapping = aes(col=high_use,alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
-
-# draw the plot
-p
-
 ```
-None of the variables seem to be evenly distributed. 
 
--There are more students that don't have a high use of alcohol than those that do.
--There are more students that want to take higher education than those who don't want to. 
--There are many students with very little absences, some with a few absences and then again many student with more absences.
--Family relations seem to be fairly good for most of the students.
--Most of the students study 2-5 hours weekly. Only few students study a lot.
+None of the variables seem to be evenly distributed.
+
 ```{r}
 library(GGally)
-library(ggplot2)
 
 # create a plot matrix with ggpairs()
 p <- ggpairs(alc2, mapping = aes(col=high_use,alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
 
 # draw the plot
 p
-
 ```
+
+-There are more students that don't have a high use of alcohol than those that do.
+
+-There are more students that want to take higher education than those who don't want to.
+
+-There are many students with very little absences, some with a few absences and then again many student with more absences.
+
+-Family relations seem to be fairly good for most of the students.
+
+-Most of the students study 2-5 hours weekly. Only few students study a lot.
+
 Looks like all the hypothesis that I made hold some truth although I guess I might not have enough data from all observed categories to verify my assumptions. 
 
 ##Fitting a logistic regression model
@@ -99,7 +94,7 @@ From the summary table I can see that the relationship:
 
 
 ##Model selection
-I study the factorial variable 'higher' a bit more. I check whether the whole variable 'higher' improves the model fit, I fit one model with (my.mod1) and one without the variable 'higher' (my.mod2) and conduct a likelihood ratio test. This tests the hypothesis that all coefficients of higher are zero:
+I study the factorial variable 'higher' a bit more. I check whether the variable 'higher' improves the model fit, I fit one model with (my.mod1) and one without the variable 'higher' (my.mod2) and conduct a likelihood ratio test. This tests the hypothesis that all coefficients of higher are zero:
 
 ```{r}
 my.mod1 <- glm(high_use ~ famrel + absences+studytime+higher-1, data = alc2, family = "binomial") 
@@ -117,7 +112,7 @@ m2 <- glm(high_use ~ famrel + absences+studytime, data = alc2, family = "binomia
 #summary table of the new model
 summary(m2)
 ```
-Then I could also try to drop the variable 'famrel' because it doesn't seem to be significant (p-value less than 0.05). I fit a model without 'famrel'.
+Next I'll try to dropping the variable 'famrel' because it doesn't seem to be significant (p-value less than 0.05). I fit a model without 'famrel'.
 
 ```{r}
 m3<-glm(formula = high_use ~ absences + studytime, family = "binomial", 
@@ -125,11 +120,11 @@ m3<-glm(formula = high_use ~ absences + studytime, family = "binomial",
 
 summary(m3)
 ```
-The model without 'famrel' has a higher AIC value which is not preferable but the difference to the model including it is less than 2 so therefore I can choose the simpler model. So my final model has only absences and studytime as explaining variables.
+The model without 'famrel' has a higher AIC value than the model including it. When comparing AIC values one should choose the model with the lowest AIC value. But if the difference between the best models in less than 2 units it is adviceable to choose the simpler one. Based on this advice I drop 'famrel' and my final model includes only absences and studytime as explaining variables.
 
 Next I count the coefficients of the final model as odds ratios and provide confidence intervals for them:
 
-###counting the odds
+###Counting the odds
 
 ```{r}
 #count odd ratios 
@@ -150,8 +145,6 @@ From the confidence intervals I can check that 1 doesn't occur within them becau
 In my case studytime has rather wide confidence intervals and therefore it might have a lower precision of the odds ratio.
 
 ##Predictions
-
-Provide a 2x2 cross tabulation of predictions versus the actual values and optionally display a graphic visualizing both the actual values and the predictions. Compute the total proportion of inaccurately classified individuals (= the training error) and comment on all the results. Compare the performance of the model with performance achieved by some simple guessing strategy.
 
 To validate my model I use it to make predictions and compare them with the true observed values.
 
@@ -184,8 +177,8 @@ g <- ggplot(alc2, aes(x = probability, y = high_use,col=prediction))
 # define the geom as points and draw the plot
 g+geom_point()
 
-
 ```
+
 In this plot I can see both the actual values and the predictions. I have quite a lot of predictions of falses even though they were actually true. But is not as bad as predicting true even though they were falses in reality. falc
 
 To quantify the goodness of my model I can count the proportion of incorrect predictions. 
@@ -198,21 +191,18 @@ loss_func <- function(class, prob) {
 }
 
 # call loss_func to compute the average number of wrong predictions
-loss_func(class = alc2$high_use, prob = alc2$probability)
-
-
+lfm3<-loss_func(class = alc2$high_use, prob = alc2$probability)
+lfm3
 ```
 
-The result is 28 %. I could've counted that also from the cross table (25 + 3 = 28 %). On my opinion that sounds like a lot but I guess it is still better than a simple guessing strategy. 72 % for correct predictions sounds better :)
+The result is 28 %. I could've counted that also from the second cross table (25 + 3 = 28 %). On my opinion that sounds like a lot but I guess it is still better than a simple guessing strategy. 72 % for correct predictions sounds better :)
 
 The problem with this kind of model validation is that the model is asked to predict the same values that are used to create the model. This seems like a circular argument. 
 
 ##Cross-validation
-Bonus: Perform 10-fold cross-validation on your model. Does your model have better test set performance (smaller prediction error using 10-fold cross-validation) compared to the model introduced in DataCamp (which had about 0.26 error). Could you find such a model? (0-2 points to compensate any loss of points from the above exercises)
+Another way of doing model validation is cross-validation. Here a proportion of the data is set aside as testing data and the model is fitted with training data (the rest) only. The resulting model is then fed with testing data to make predictions. The goodness of the model is then quantified as the proportion of correct predictions. This procedure is repeated several times so that the whole dataset has been used as testing data. If the cross-validation is 5-fold it means that the data are split into 5 proportions of which 1/5 is used as testing dataset one at a time. Which data to select as testing data can be random or for example spatially defined.
 
-Another way of doing model validation is cross-validation. Here a proportion of the data is set aside as testing data and the model is fitted with training data only. The resulting model is then fed with testing data to make predictions. The goodness of the model is then quantified as the proportion of correct predictions. This procedure is repeated several times so that the whole dataset has been used as testing data. If the cross-validation is 5-fold it means that the data is split into 5 proportions of which 1/5 is used as testing data one at a time. Which data to select as testing data can be random or for example spatially defined.
-
-In R cross-validation can be done easily several times so the following r code I repeat a couple of times:
+In R cross-validation can be done easily several times so I reapeat the following r code a couple of times:
 
 ```{r}
 # K-fold cross-validation
@@ -222,26 +212,152 @@ cv <- cv.glm(data = alc2, cost = loss_func, glmfit = m, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]
 ```
+
 All the results that I get are close to 29-30 %. This means that with cross-validation my model seems to be performing worse than with the loss function I performed earlier (and the model used in DataCamp). I assume this is because the cross-validation procedure is more profound and therefore gives a more realistic valuation of the prediction accuracy. Without a proper model validation the results might be too over-optimistic.
 
 ##Comparing complicated and simple models with cross-validation metrics
 
-Super-Bonus: Perform cross-validation to compare the performance of different logistic regression models (= different sets of predictors). Start with a very high number of predictors and explore the changes in the training and testing errors as you move to models with less predictors. Draw a graph displaying the trends of both training and testing errors by the number of predictors in the model. (0-4 points to compensate any loss of points from the above exercises)
-
-m <- glm(high_use ~ famrel + absences+studytime+higher-1, data = alc2, family = "binomial")
+Next I do a little exploration. I compare the performance of different logistic regression models (= different sets of predictors). I build models using 30, 19, 10 and 5 variables. I count training and testing errors for all the models and compare them.
 
 ```{r}
-#the most complicated model
-M1<-glm(high_use ~ famrel + absences+studytime+higher, data = alc2, family = "binomial")
-M2<-glm(high_use ~        + absences+studytime+higher, data = alc2, family = "binomial")
-M3<-glm(high_use ~ famrel +         +studytime+higher, data = alc2, family = "binomial")
-M4<-glm(high_use ~ famrel + absences+         +higher, data = alc2, family = "binomial")
-M5<-glm(high_use ~ famrel + absences+studytime+      , data = alc2, family = "binomial")
-M6<-glm(high_use ~ studytime+higher, data = alc2, family = "binomial")
-M7<-glm(high_use ~ famrel + higher, data = alc2, family = "binomial")
-M8<-glm(high_use ~ famrel + absences, data = alc2, family = "binomial")
+names(alc)
+
+#select 30 variables
+chooseM1<-c("age","high_use","famrel","absences","studytime","higher","activities","nursery", "internet","romantic","G3","address","Pstatus","Medu","Fedu","Mjob","Fjob", "reason","guardian","traveltime","failures","schoolsup", "famsup","paid", "freetime", "goout","health","school","sex","famsize")
+
+alcM1<-select(alc,one_of(chooseM1))
+
+#29 explaining variables
+M1<-glm(high_use ~ school+higher+sex+age+ address+ famsize+ Medu+ Fedu+ Mjob+ Fjob+ reason+ nursery+ internet+ guardian+ traveltime+ failures+ schoolsup+ famsup+ paid+ freetime+ goout+ health+absences+studytime+famrel+activities+romantic+G3+Pstatus, data = alcM1, family = "binomial")
+
+summary(M1)
+
+# predict() the probability of high_use
+probabilities <- predict(M1, type = "response")
+
+# add the predicted probabilities to 'alc'
+alcM1 <- mutate(alcM1, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alcM1 <- mutate(alcM1, prediction = probability>0.5)
+
+# call loss_func to compute the average number of wrong predictions
+lfM1<-loss_func(class = alcM1$high_use, prob = alcM1$probability)
+
+#cross-validation
+cv <- cv.glm(data = alcM1, cost = loss_func, glmfit = M1, K = 10)
+
+# average number of wrong predictions in the cross validation
+cvM1<-cv$delta[1]
+
+#####################################################################
+#19 variables
+chooseM2<-c("high_use","famrel","absences","studytime","activities","nursery", "romantic","address", "reason","guardian","traveltime","failures","paid", "freetime", "goout","health","school","sex","famsize")
+
+alcM2<-select(alc,one_of(chooseM2))
+
+#18 explaining variables
+M2<-glm(high_use ~ school+sex+ address+ famsize+ reason+ nursery+ guardian+ traveltime+ failures+ paid+ freetime+ goout+health+absences+studytime+famrel+activities+romantic, data = alcM2, family = "binomial")
+
+summary(M2)
+
+# predict() the probability of high_use
+probabilities <- predict(M2, type = "response")
+
+# add the predicted probabilities to 'alc'
+alcM2 <- mutate(alcM2, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alcM2 <- mutate(alcM2, prediction = probability>0.5)
+
+# call loss_func to compute the average number of wrong predictions
+lfM2<-loss_func(class = alcM2$high_use, prob = alcM2$probability)
+
+cv <- cv.glm(data = alcM2, cost = loss_func, glmfit = M2, K = 10)
+
+# average number of wrong predictions in the cross validation
+cvM2<-cv$delta[1]
+
+##########################################################################3
+#10 variables
+chooseM3<-c("high_use","famrel","absences","address", "reason","guardian","paid", "goout","sex","famsize")
+
+alcM3<-select(alc,one_of(chooseM3))
+
+#9 explaining variables
+M3<-glm(high_use ~ sex+ address+ famsize+ reason+ guardian+  paid+  goout+absences+famrel, data = alcM3, family = "binomial")
+
+summary(M3)
+
+# predict() the probability of high_use
+probabilities <- predict(M3, type = "response")
+
+# add the predicted probabilities to 'alc'
+alcM3 <- mutate(alcM3, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alcM3 <- mutate(alcM3, prediction = probability>0.5)
+
+# call loss_func to compute the average number of wrong predictions
+lfM3<-loss_func(class = alcM3$high_use, prob = alcM3$probability)
+
+cv <- cv.glm(data = alcM3, cost = loss_func, glmfit = M3, K = 10)
+
+# average number of wrong predictions in the cross validation
+cvM3<-cv$delta[1]
+
+##########################################################################3
+#5 variables
+chooseM4<-c("high_use","famrel","absences", "goout","sex")
+
+alcM4<-select(alc,one_of(chooseM4))
+
+#4 explaining variables
+M4<-glm(high_use ~ sex+  goout+absences+famrel, data = alcM4, family = "binomial")
+
+summary(M4)
+
+# predict() the probability of high_use
+probabilities <- predict(M4, type = "response")
+
+# add the predicted probabilities to 'alc'
+alcM4 <- mutate(alcM4, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alcM4 <- mutate(alcM4, prediction = probability>0.5)
+
+# call loss_func to compute the average number of wrong predictions
+lfM4<-loss_func(class = alcM4$high_use, prob = alcM4$probability)
+
+cv <- cv.glm(data = alcM4, cost = loss_func, glmfit = M4, K = 10)
+
+# average number of wrong predictions in the cross validation
+cvM4<-cv$delta[1]
+
+#create a data frame containing the number of variables and training and testing errors
+Nvariables<-c(5,10,19,30)
+errors<-as.data.frame(Nvariables)
+errors$train=NA
+errors[1, 2] = lfM4
+errors[2, 2] = lfM3
+errors[3, 2] = lfM2
+errors[4, 2] = lfM1
+errors$test=NA
+errors[1, 3] = cvM4
+errors[2, 3] = cvM3
+errors[3, 3] = cvM2
+errors[4, 3] = cvM1
+
+#plot the results
+dfplot <- errors %>% gather(key, value, -Nvariables)
+
+ggplot(dfplot, mapping = aes(x = Nvariables, y = value, color = key) ) + geom_line()
+
 ```
 
 
+It seems that reducing the number of explaining variables from 30 to 5 has little effect on training errors whereas for testing errors it has a significant negative effect. It reduces the testing error and models with less variables seem to give more accurate predictions.
+
+I'm not sure what exactly I can interpret from this result because as I reduced the number of explaining variables I dropped them based on their statistical insignificance.
 
 
