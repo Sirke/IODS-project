@@ -1,6 +1,5 @@
 #Logistic regression
 
-
 ##What I learned this week
 
 This week I learned about logistic regression..
