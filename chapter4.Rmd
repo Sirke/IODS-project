@@ -1,6 +1,6 @@
 ---
-title: "Chapter4"
-author: "sirke"
+title: "chapter4"
+author: "Sirke Piirainen"
 date: "24 marraskuuta 2018"
 output: html_document
 ---
@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-#Clustering and classification
+##Clustering and classification
 
 This week I learned about clustering and classification. How to cluster observations, how to study which factors affect or justify clustering, how many clusters is appropriate etc?
 
@@ -41,7 +41,7 @@ Let's explore graphically the distributions and relations of the data:
 pairs(Boston)
 ```
 
-This plot is difficult to read eventhough I scale the output to 100 % and set dpi=300. I'll figure out later how to improve the quality of the output. From the summary table I'm however able to explore the variation and distributions of the variables. 
+This plot is difficult to read. I'll figure out later how to improve the quality of the output. From the summary table I'm however able to explore the variation and distributions of the variables. 
 
 Here are two dotplots of variables 'crim' (per capita crime rate by town) and 'zn' (proportion of residential land zoned for lots over 25,000 sq.ft.) which show that these two variables are not very evenly distributed:
 
@@ -196,7 +196,7 @@ I did the random division of train and test data and predicted the above classes
 
 ###7. K-means clustering
 
-Next I cluster the data into groups. I run k-means algorithm on the dataset, investigate what is the optimal number of clusters and run the algorithm again. 
+Next I study the boston data without any classifications and try to cluster the data into groups. Maybe the observations form clusters according to the suburbs. I run k-means algorithm on the dataset, investigate what is the optimal number of clusters and run the algorithm again. 
 
 First I reload the Boston dataset and standardize it. Then I calculate the Euklidean distances between the observations and present a summary of the distances:
 
@@ -260,8 +260,76 @@ I run the clustering again with 2 centers:
 km <-kmeans(boston_scaled2, centers = 2)
 
 # plot the Boston dataset with clusters
-pairs(boston_scaled2[10:14], col = km$cluster)
+pairs(boston_scaled2[1:6], col = km$cluster)
 
 ```
 
-Now the clustering seems better, at least for some variable pairs. 
+Now the clustering seems better, at least for some variable pairs. But on my opinion, having only two groups doesn't tell much. Maybe it suggests that the residents in Boston are divided into two groups, the wealthy and the poor?
+
+###Bonus: 
+
+Next I perform the LDA again to the boston dataset, this time with clusters (3) as the target variable. By visualizing the results with a biplot I can interpret which variables influence the clustering.
+
+```{r}
+boston_scaled3<-boston_scaled2
+
+# k-means clustering
+km <-kmeans(boston_scaled3, centers = 3)
+
+klusteri<-km$cluster
+class(klusteri)
+
+boston_scaled3<-cbind(boston_scaled3,klusteri)
+summary(boston_scaled3)
+
+# linear discriminant analysis
+lda.fit2 <- lda(klusteri~., data = boston_scaled3)
+
+# print the lda.fit object
+lda.fit2
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(boston_scaled3$klusteri)
+
+# plot the lda results
+plot(lda.fit2, dimen = 2,col=classes,pch=classes)
+lda.arrows(lda.fit2, myscale = 1)
+
+
+```
+
+From these results I would interpret that the variable 'rad' (index of accessibility to radial highways) is the strongest linear separator in this dataset. Although many other variables follow not far behind. 
+
+###Super-Bonus: 
+
+Next I'll draw some 3D plots of the training data:
+
+```{r}
+model_predictors <- dplyr::select(train, -crime)
+# check the dimensions
+dim(model_predictors)
+dim(lda.fit$scaling)
+# matrix multiplication
+matrix_product <- as.matrix(model_predictors) %*% lda.fit$scaling
+matrix_product <- as.data.frame(matrix_product)
+
+library(plotly)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers')
+
+#Set the color to be the crime classes of the train set. Draw another 3D plot where the #color is defined by the clusters of the k-means. How do the plots differ?
+
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers',color=train$crime)  
+
+```
+
+I stop the exercise here because I'm having trouble understanding the instructions. I'm able to draw one 3D plot and crime seems to be a strong separator in the dataset. The second plot should demonstrate the division by clusters however I'm not sure anymore should I do the k-means clustering again to the training data and then change the code or could I do it just by modifying the color argument.  I leave it here. 
