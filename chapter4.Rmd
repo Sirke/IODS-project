@@ -1,20 +1,11 @@
----
-title: "chapter4"
-author: "Sirke Piirainen"
-date: "24 marraskuuta 2018"
-output: html_document
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
-##Clustering and classification
+#Clustering and classification
 
 This week I learned about clustering and classification. How to cluster observations, how to study which factors affect or justify clustering, how many clusters is appropriate etc?
 
 
-###2.Data input and summary
+##2. Data input and summary
 
 This week's data comes from an R package called MASS:
 
@@ -33,7 +24,7 @@ summary(Boston)
 The dataset consist of 14 variables and 506 observations. All variables are numerical. One variable ('chas') is a 1/0, presence/absence dummy variable. The variables describe housing values in suburbs of Boston and factors measured at the suburbs which are thought to be related with housing values. Factors include measures of for example crime rate, access to Charles River, nitrogen oxides concentration, average number of rooms per dwelling, distances to five Boston employment centres, accessibility to radial highways, proportion of blacks by town and median value of owner-occupied homes. The full details can be found [here](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html).
 
 
-###3. Data exploration
+##3. Data exploration
 
 Let's explore graphically the distributions and relations of the data:
 
@@ -47,9 +38,11 @@ Here are two dotplots of variables 'crim' (per capita crime rate by town) and 'z
 
 ```{r}
 dotchart(Boston$crim)
-
+```
+```{r}
 dotchart(Boston$zn)
 ```
+
 
 Some variables seem correlated. Here's a correlation matrix of the variables:
 
@@ -75,7 +68,7 @@ corrplot(cor_matrix, method="circle",type="upper",cl.pos = "b", tl.pos = "d", tl
 This plot is easier to read. The bigger the circle the more correlated the variables are. Red indicates negative correlation and blue indicated positive correlation.
 
 
-###4. Standardize dataset
+##4. Standardize dataset
 
 Some of the variables have very high values and wide distributions. We want to scale all variables because later on it may be difficult to sum or average variables that are on different scales. Scaling can be done to all variables in the dataset as they are all numerical.
 
@@ -96,7 +89,7 @@ boston_scaled<-as.data.frame(boston_scaled)
 Now all the variables have their mean at zero and their distributions are more moderate.
 
 
-###4. Create a categorical variable
+##4. Create a categorical variable
 
 Next I create a categorical variable of the crime rate in the Boston dataset. I use quantiles as the break points. I drop the old crime rate variable from the dataset.
 
@@ -121,7 +114,7 @@ boston_scaled <- dplyr::select(boston_scaled, -crim)
 boston_scaled <- data.frame(boston_scaled, crime)
 ```
 
-###4. Divide the data into training and testing sets
+##4. Divide the data into training and testing sets
 
 For later model evaluation purposes I divide the dataset into training and testing datasets, so that 80% of the data belongs to the train set:
 
@@ -141,7 +134,7 @@ train <- boston_scaled[ind,]
 test <- boston_scaled[-ind,]
 ```
 
-###5. Fit a linear discriminant analysis on the train set. 
+##5. Fit a linear discriminant analysis on the train set. 
 
 Next I want to know which variables might explain the target variable crime rate. I do a linear discriminant analysis with the categorical crime rate as the target variable and all the other variables in the dataset as predictor variables:
 
@@ -171,7 +164,10 @@ lda.arrows(lda.fit, myscale = 1)
 
 ```
 
-### 6.Predict
+Variable 'rad' looks like a strong classifying factor. Also 'zn' and 'nox' are dividing the observations.
+
+
+##6. Predict
 
 Next I want to use the observations in the test set to predict crime classes. I do this because I want to estimate the "goodness" of my model by comparing predictions to observed "real" data. 
 
@@ -194,7 +190,7 @@ table(correct = correct_classes, predicted = lda.pred$class)
 
 I did the random division of train and test data and predicted the above classes twice. First I got a fairly poor result with more than half of the med_high cases predicted incorrectly. On the second round the results look better (results shown here). Some classes are still incorrectly predicted but at least most of the predictions are correct.
 
-###7. K-means clustering
+##7. K-means clustering
 
 Next I study the boston data without any classifications and try to cluster the data into groups. Maybe the observations form clusters according to the suburbs. I run k-means algorithm on the dataset, investigate what is the optimal number of clusters and run the algorithm again. 
 
@@ -227,6 +223,7 @@ km <-kmeans(boston_scaled2, centers = 3)
 # plot the Boston dataset with clusters
 pairs(boston_scaled2[9:14], col = km$cluster)
 ```
+
 I zoomed in to various parts of the plot and found that when looking at the variable 'tax' it is divided into clusters so that at least the black observations belong clearly to their own group.
 
 I also explored the clustering with 5 centers. The grouping seemed even more arbitrary.
@@ -254,7 +251,7 @@ The total WCSS drops dramatically at around the value 2. That is the optimal num
 
 I run the clustering again with 2 centers:
 
-```{r fig1, out.width = '100%',dpi=300}
+```{r}
 
 # k-means clustering
 km <-kmeans(boston_scaled2, centers = 2)
@@ -266,7 +263,7 @@ pairs(boston_scaled2[1:6], col = km$cluster)
 
 Now the clustering seems better, at least for some variable pairs. But on my opinion, having only two groups doesn't tell much. Maybe it suggests that the residents in Boston are divided into two groups, the wealthy and the poor?
 
-###Bonus: 
+##Bonus: 
 
 Next I perform the LDA again to the boston dataset, this time with clusters (3) as the target variable. By visualizing the results with a biplot I can interpret which variables influence the clustering.
 
@@ -310,9 +307,9 @@ lda.arrows(lda.fit2, myscale = 1)
 
 From these results I would interpret that the variable 'rad' (index of accessibility to radial highways) is the strongest linear separator in this dataset. Although many other variables follow not far behind. 
 
-###Super-Bonus: 
+##Super-Bonus: 
 
-Next I'll draw some 3D plots of the training data:
+Next I'll draw some 3D plots of the training data. NOTE! You might have to click around to see the figure.
 
 ```{r}
 model_predictors <- dplyr::select(train, -crime)
@@ -332,4 +329,6 @@ plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, 
 
 ```
 
-I stop the exercise here because I'm having trouble understanding the instructions. I'm able to draw one 3D plot and crime seems to be a strong separator in the dataset. The second plot should demonstrate the division by clusters however I'm not sure anymore should I do the k-means clustering again to the training data and then change the code or could I do it just by modifying the color argument.  I leave it here. 
+I stop the exercise here because I'm having trouble understanding the instructions. I'm able to draw these two 3D plots and crime seems to be a strong separator in the dataset. The last plot should demonstrate the division by clusters. However, I'm not sure anymore should I do the k-means clustering again to the training data and then change the plotting code or could I do it just by modifying the color argument.  I leave it here.
+
+
