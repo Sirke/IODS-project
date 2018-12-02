@@ -1,0 +1,183 @@
+
+# Dimensionality reduction techniques
+
+This week I learned about dimensionality reduction techniques. 
+
+## 1. Meet the human data
+
+First I read in data about human development. The data consists of several indicators that are thought to be important for a measure called 'human development index'. This index is thought to measure the development of a country from a human perspective, so that a country's development would not be measured only on economical terms. 
+
+```{r}
+human<-read.csv("C:/Users/Sirke Piirainen/Documents/GitHub/IODS-project/data/human2.csv",header = T, row.names=1)
+str(human)
+```
+
+The data consist of 155 observations of 8 variables. Each observation (row) represents a country. 
+
+Variables explained:
+
+MMR=maternal mortality ratio
+
+ABR=adolescent birth rate
+
+PARL=Percentange of female representatives in parliament
+
+RAT.EDU=ratio of females to males with at least secondary education
+
+RAT.LAB=ratio of females to males in the labour force
+
+EYE=expected years of education
+
+GNI= gross national income
+
+LEB=life expectancy at birth
+
+All the variables are numerical and mostly continuous.
+
+```{r}
+summary(human)
+hist(human$GNI)
+```
+
+Some of the variables (for example GNI) have very wide distributions and are not normally distributed.
+
+```{r}
+# Access GGally and corrplot
+library(GGally)
+library(corrplot)
+library(magrittr)
+# visualize the 'human_' variables
+ggpairs(human)
+
+# compute the correlation matrix and visualize it with corrplot
+cor(human)%>%corrplot()
+
+```
+
+From a ggplot it is easier to see the distributions of the variables. Correlation plot helps to see the correlation between variables.
+
+It seems that the higher the maternal mortality rates, MMR, (or adolescent birth rates, ABR), the lower the life expectancy, LEB,(or expected years of education, EYE). MMR and ABR, as well as LEB and EYE are correlated also.  
+
+
+## 2. Principal component analysis on unstandardized data
+
+I perform principal component analysis on unscales human dataset.
+
+```{r}
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human)
+
+# create and print out a summary of pca_human
+s <- summary(pca_human)
+s
+
+# rounded percetanges of variance captured by each PC
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+
+# print out the percentages of variance
+pca_pr
+
+# create object pc_lab to be used as axis labels
+pc_lab<-paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+```
+
+From the summary table I can see that this kind of data is not suitable for the analysis. The first component supposedly is able to explain all the variation in the data set and the rest of the dimensions add nothing extra to the analysis. 
+
+From the biplot it is clear that variable GNI, gross national income, is the factor explaining everything. However, this is not case in reality. This result is just because GNI was the variable with the highest variation in the observations and therefore only "seems" to explain most of the variation. I should have standardized the data to make the variation of all the variables comparable.
+
+
+## 3. PCA on standardized data
+
+Usually variables have to be standardized for a PCA so I'll do that and then rerun the analysis.
+
+```{r}
+human_std <- scale(human)
+
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human_std)
+
+# create and print out a summary of pca_human
+s <- summary(pca_human)
+s
+
+# rounded percetanges of variance captured by each PC
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+
+# print out the percentages of variance
+pca_pr
+
+# create object pc_lab to be used as axis labels
+pc_lab<-paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+```
+
+Now the summary table shows more reasonable amounts of variation that each principal component (one after another) is able to explain. The first component explains 53.6 %. 
+
+Also the biplot makes more sense now. The first dimension doesn't explain all the variation in the data and the second component supplements it. The variables are more apart in this biplot and no one variable is dominating. Gross national income is not the only factor explaining differences between the observations anymore. It is now only one factor amongst others. GNI is actually together with expected years of education, life expectancy at birth and ratio of females to males with at least secondary education. These variables tell of the same of thing and are correlated. In this biplot the variations of the variables are more equal and therefore each variable is able to explain its own bit of the observations. 
+
+## 4. Personal interpretation
+
+The second biplot shows that variables GNI, LEB, RAT.EDU and EYE are positively correlated with principal component 1, whereas ABR and MMR are negatively correlated. Variables RAT.LAB and PARL are negatively correlated with principal component 2. 
+
+In other words, the observations are mainly divided so that countries that have high gross national product have also high life expectancy at birth, high ratio of female to male with at least secondary education and high expected years of education. On the opposite, countries with high maternal mortality have also high adolescent birth rates. These two extremities are opposite to each other and in the biplot their arrows are in a 180 degree angle showing perfect negative correlation. For example, countries with high gross national product have low rates of maternal mortality. 
+
+RAT.LAB, ratio of females to males in the labour force and PARL, percentage of female in the parliament, are variables that explain the second most largest part of the variation in the data. These two variables are somewhat correlated. Countries with high ratio of females at work have also high rate of females in parliament. These two variables are also orthogonal to other variables, meaning that they are not correlated with them. For example, a country with high GNI can have high or low rates of women in parliament.  
+
+
+## 5. Multiple Correspondence Analysis
+
+If the variables are factors instead of numerical, we have to do a multiple correspondence analysis. 
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(FactoMineR)
+data(tea)
+
+# column names to keep in the dataset
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- select(tea, one_of(keep_columns))
+
+# look at the summaries and structure of the data
+summary(tea_time)
+str(tea_time)
+
+
+```
+
+The tea dataset consists of 300 rows and 36 columns. Rows represent the individuals, columns represent the different questions. The first 18 questions are active ones, the 19th is a supplementary quantitative variable (the age) and the last variables are supplementary categorical variables. I didn't find exact explanations for the variables but I chose 6 of them which are quite self-explanatory if you look at the variable names and observation values. All the variables are categorical.
+
+```{r}
+# visualize the dataset
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") +geom_bar()+theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+
+Variables seem to have equal (sugar) or unequal (lunch) amounts of observations on each variable level. 
+
+I could guess that people who drink green tea drink it without sugar, alone and buy it unpackaged from a tea shop. 
+
+```{r}
+# multiple correspondence analysis
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+
+# visualize MCA
+plot(mca, invisible=c("ind"),habillage = "quali")
+```
+
+From the summary and from the biplot it seems that the dimensions are not able to explain much of the variation. The first dimension explains "only" 15 % of the variation. 
+
+There are some factor levels that are similar (close to each other in the biplot). For example, people who drink 'unpackaged' tea buy tea from 'tea shops'. Makes sense. And on the opposite, people who consume 'tea bags' buy tea from 'chain stores'. My assumption of people drinking unpackaged green tea bought from tea shops is not far fetched because 'green' is also rather similar (close to) with 'unpackaged' and 'tea shop'. 'No sugar' and 'alone' are farther off but still closer than 'sugar' or 'lemon', 'milk' or 'other'. 
+
+
