@@ -75,4 +75,7 @@ glimpse(RATSL)
 #not truly independent.
 
 #save the data
-write.csv(RATSL, "rats.csv", header=T)
+write.csv(RATSL,"rats.csv",row.names = F)
+
+write.csv(BPRSL, "men.csv", row.names = F)
+
