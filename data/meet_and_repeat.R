@@ -73,9 +73,6 @@ glimpse(RATSL)
 #In ecological data there is usually also either spatial or temporal correlation. 
 #Observations that are timely or spatially are more resembling and therefore correlated and 
 #not truly independent.
-.
 
-
-
-
-#
+#save the data
+write.csv(RATSL, "rats.csv", header=T)
